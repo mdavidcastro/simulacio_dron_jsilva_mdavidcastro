@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AeroMundo | SimDron</title>
+
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- 🎨 Configuración de colores personalizada -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ocean: '#2c5364',
+            deep: '#0f2027',
+            sky: '#1e90ff'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="bg-gradient-to-br from-deep to-ocean text-white min-h-screen flex flex-col font-[Segoe_UI]">
+
+  
+  <header class="bg-black/60 backdrop-blur-sm shadow-lg py-4 px-8 flex justify-between items-center">
+    <h1 class="text-4xl font-bold text-sky drop-shadow-lg">AeroMundo</h1>
+    <nav>
+      <ul class="flex gap-4">
+        <li>
+          <a href="#home">
+            <button class="bg-sky px-4 py-2 rounded-md font-semibold hover:bg-blue-400 transition transform hover:scale-105 shadow">
+              Home
+            </button>
+          </a>
+        </li>
+        <li>
+          <a href="#simulations">
+            <button class="bg-sky px-4 py-2 rounded-md font-semibold hover:bg-blue-400 transition transform hover:scale-105 shadow">
+              Simulaciones
+            </button>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- HERO / HOME -->
+  <section id="home" class="relative text-center flex flex-col justify-center items-center flex-1 py-24">
+    <div class="absolute inset-0 bg-[url('img/Hero.png')] bg-cover bg-center opacity-20 rounded-xl"></div>
+    <h2 class="relative text-5xl font-bold text-white drop-shadow-md mb-4">Bienvenido a AeroMundo</h2>
+    <p class="relative text-xl text-gray-200 italic">(Simulación de drones de Alta Precisión)</p>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="bg-white text-gray-800 rounded-2xl shadow-lg max-w-5xl mx-auto my-10 p-10 text-center">
+    <h2 class="text-3xl font-bold text-sky mb-6">Características de AeroMundo</h2>
+    <p class="text-lg max-w-3xl mx-auto">
+      Explora nuestras potentes herramientas de simulación para analizar el entorno, ejecutar maniobras y optimizar la autonomía de vuelo.
+    </p>
+  </section>
+
+  <!-- SIMULATIONS -->
+  <section id="simulations" class="py-16 px-8 flex flex-wrap justify-center gap-8">
+    <!-- CARD 1 -->
+    <a href="entorno.html" class="group block max-w-xs">
+      <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 shadow-md hover:shadow-xl transition transform hover:-translate-y-2 border border-sky/30">
+        <h3 class="text-2xl font-semibold text-sky mb-3 group-hover:text-blue-300 transition">🌍 Entorno</h3>
+        <p class="text-gray-100 leading-relaxed">
+          Ajusta condiciones ambientales como viento, gravedad y temperatura para estudiar el rendimiento del dron en entornos reales.
+        </p>
+      </div>
+    </a>
+
+    <!-- CARD 2 -->
+    <a href="log.html" class="group block max-w-xs">
+      <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 shadow-md hover:shadow-xl transition transform hover:-translate-y-2 border border-sky/30">
+        <h3 class="text-2xl font-semibold text-sky mb-3 group-hover:text-blue-300 transition">📄 Log</h3>
+        <p class="text-gray-100 leading-relaxed">
+          Revisa los datos de las diferentes simulaciones
+          en registros organizados a tavés de archivos JSON
+        </p>
+      </div>
+    </a>
+
+    <!-- CARD 3 -->
+    <div class="group block max-w-xs">
+      <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-6 shadow-md hover:shadow-xl transition transform hover:-translate-y-2 border border-sky/30">
+        <h3 class="text-2xl font-semibold text-sky mb-3 group-hover:text-blue-300 transition">⚡ Acerca de</h3>
+        <p class="text-gray-100 leading-relaxed">
+          fundamentos teoricos acerca de las ecuaciones utilizadas y más detalles
+          acerca del codigo y el proyecto
+        </p>

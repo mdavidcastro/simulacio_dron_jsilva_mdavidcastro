@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logs de Simulaciones</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="js/logs.js" defer></script>
+</head>
+<body class="bg-gray-100">
+  <div class="max-w-5xl mx-auto mt-10 p-4">
+    <h1 class="text-3xl font-bold text-center text-blue-700 mb-6">
+      📘 Registro de Simulaciones
+    </h1>
+    <!-- Nuevo contenedor para logs -->
+    <div id="logsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', fetchLogs);
+  </script>
+</body>
+</html>
