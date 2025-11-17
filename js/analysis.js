@@ -1,294 +1,326 @@
-// --- Utilidad ---
+// analysis.js
+let chartVelocity = null;
+let chartPosition = null;
+
+
+// --- Funciones de Utilidad ---
 function parseArray(str) {
-  return str.split(',').map(Number).filter(n => !isNaN(n));
+  return str.split(",").map(Number).filter(n => !isNaN(n));
 }
 
-// --- Tabs ---
-function showTab(tabActive) {
-  const tab3D = document.getElementById('tab3D');
-  const tabVel = document.getElementById('tabVel');
-  const tabPos = document.getElementById('tabPos');
-  const chart3D = document.getElementById('simChartContainer');
-  const chartVelWrapper = document.getElementById('simChartVelWrapper');
-  const chartPosWrapper = document.getElementById('simChartPosWrapper');
-  if (!tab3D || !tabVel || !tabPos || !chart3D || !chartVelWrapper || !chartPosWrapper) return;
-  [tab3D, tabVel, tabPos].forEach(tab => {
-    tab.classList.remove('bg-sky', 'text-white', 'bg-gray-400', 'text-black');
-    tab.classList.add('bg-gray-400', 'text-black');
-  });
-  tabActive.classList.remove('bg-gray-400', 'text-black');
-  tabActive.classList.add('bg-sky', 'text-white');
-  chart3D.style.display = 'none';
-  chartVelWrapper.style.display = 'none';
-  chartPosWrapper.style.display = 'none';
-  if (tabActive === tab3D) chart3D.style.display = 'block';
-  if (tabActive === tabVel) chartVelWrapper.style.display = 'block';
-  if (tabActive === tabPos) chartPosWrapper.style.display = 'block';
-  // Redibujar Chart.js si corresponde
-  if (tabActive === tabVel && window.velocityChartInstance) {
-    window.velocityChartInstance.resize();
-    window.velocityChartInstance.update();
-  }
-  if (tabActive === tabPos && window.positionChartInstance) {
-    window.positionChartInstance.resize();
-    window.positionChartInstance.update();
-  }
-}
-let activeTab = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Prevenir cualquier submit accidental del formulario
-  const form = document.getElementById('simForm');
-  if (form) {
-    form.addEventListener('submit', e => { e.preventDefault(); return false; });
-  }
-  // Capturar errores globales de JS y mostrarlos en el debug
-  window.onerror = function(msg, url, line, col, error) {
-    const debugDiv = document.getElementById('simDebugMsg');
-    if (debugDiv) debugDiv.innerText = '[SimDron] ERROR GLOBAL: ' + msg + ' @' + line + ':' + col;
-    return false;
-  };
-  // Mensaje de debug visual
-  const debugDiv = document.getElementById('simDebugMsg');
-  if (debugDiv) debugDiv.innerText = '[SimDron] JS activo: esperando simulación...';
-  const tab3D = document.getElementById('tab3D');
-  const tabVel = document.getElementById('tabVel');
-  const tabPos = document.getElementById('tabPos');
-  const chart3D = document.getElementById('simChartContainer');
-  if (chart3D) chart3D.classList.remove('hidden');
-  if (tab3D && tabVel && tabPos) {
-    tab3D.addEventListener('click', () => showTab(tab3D));
-    tabVel.addEventListener('click', () => showTab(tabVel));
-    tabPos.addEventListener('click', () => showTab(tabPos));
-    showTab(tab3D);
-    activeTab = tab3D;
-    if (chart3D) {
-      chart3D.innerHTML = '<div id="simWelcomeMsg" class="flex items-center justify-center h-full text-gray-400">Ejecuta la simulación para ver la trayectoria 3D</div>';
-    }
-  }
-  // Ya no se usa submit, el botón llama a runSimulation() directamente
-});
-
-// --- Simulación ---
+// --- Ejecutar Simulación ---
 async function runSimulation() {
-  // Mostrar resumen de parámetros usados
-  const paramsSummary =
-    `<b>Parámetros usados:</b> ` +
-    `Masa=${document.getElementById('mass').value} kg, ` +
-    `Posición=[${document.getElementById('position').value}], ` +
-    `Velocidad=[${document.getElementById('velocity').value}], ` +
-    `Viento=[${document.getElementById('wind').value}], ` +
-    `Gravedad=${document.getElementById('gravity').value}, ` +
-    `Drag=${document.getElementById('drag').value}`;
-  const simParamsDiv = document.getElementById('simParamsSummary');
-  if (simParamsDiv) simParamsDiv.innerHTML = paramsSummary;
-  const debugDiv = document.getElementById('simDebugMsg');
-  if (debugDiv) debugDiv.innerText = '[SimDron] Ejecutando simulación...';
-  console.log('[SimDron] Ejecutando simulación...');
   try {
-    if (debugDiv) debugDiv.innerText = '[SimDron] Enviando datos al backend...';
-  // Limpiar solo el mensaje de error, no el canvas ni el contenedor
-  mostrarErrorGrafica("");
-    // Validar y obtener datos
+    if (window.event) {
+      window.event.preventDefault();
+      window.event.stopPropagation();
+    }
+    
+    console.log("Iniciando simulación...");
+    
     const drone = {
-      Position: parseArray(document.getElementById('position').value),
-      Velocity: parseArray(document.getElementById('velocity').value),
-      Mass: Number(document.getElementById('mass').value)
+      Position: parseArray(document.getElementById("position").value),
+      Velocity: parseArray(document.getElementById("velocity").value),
+      Mass: Number(document.getElementById("mass").value)
     };
+    
     const environment = {
-      Wind: parseArray(document.getElementById('wind').value),
-      Gravity: Number(document.getElementById('gravity').value),
-      Drag: Number(document.getElementById('drag').value)
+      Wind: parseArray(document.getElementById("wind").value),
+      Gravity: Number(document.getElementById("gravity").value),
+      Drag: Number(document.getElementById("drag").value)
     };
-    if (drone.Position.length !== 3 || drone.Velocity.length !== 3 || environment.Wind.length !== 3) {
-      mostrarErrorGrafica('Todos los vectores deben tener 3 valores.');
-      return;
-    }
-    if (isNaN(drone.Mass) || isNaN(environment.Gravity) || isNaN(environment.Drag)) {
-      mostrarErrorGrafica('Parámetros numéricos inválidos.');
-      return;
-    }
+    
     const data = { Drone: drone, Environment: environment };
-    console.log('[SimDron] Enviando datos al backend:', data);
-  const res = await fetch('http://127.0.0.1:5002/simulate', {
+    console.log("Datos a enviar:", data);
+    
+    const res = await fetch('http://127.0.0.1:5002/simulate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    console.log('[SimDron] Respuesta HTTP:', res.status);
-    if (!res.ok) {
-      if (debugDiv) debugDiv.innerText = `[SimDron] Error HTTP: ${res.status}`;
-      throw new Error(`HTTP ${res.status}`);
-    }
-  const result = await res.json();
-  const simData = result.result || result;
-  if (debugDiv) debugDiv.innerText = '[SimDron] Datos recibidos:\n' + JSON.stringify(simData, null, 2).slice(0, 400) + '\nRenderizando...';
-    // Limpiar solo el mensaje de bienvenida, no el canvas ni el contenedor
-    const chart3D = document.getElementById('simChartContainer');
-    const welcomeMsg = document.getElementById('simWelcomeMsg');
-    if (welcomeMsg && chart3D) chart3D.removeChild(welcomeMsg);
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    
+    const result = await res.json();
+    console.log("Resultado recibido:", result);
+    
+    const simData = result.result || result;
+    
     render3DTrajectory(simData);
     renderCharts(simData);
-    // Restaurar la pestaña activa después de simular
-    if (activeTab) {
-      showTab(activeTab);
-    } else {
-      showTab(document.getElementById('tab3D'));
-    }
-    if (debugDiv) debugDiv.innerText = '[SimDron] Simulación completada.';
+
+    document.getElementById('simChartContainer').classList.remove('hidden');
+    document.getElementById('simChartVel').classList.add('hidden');
+    document.getElementById('simChartPos').classList.add('hidden');
+
+    console.log("Simulación completada exitosamente");
+    
   } catch (err) {
-    mostrarErrorGrafica('No se pudo ejecutar la simulación.');
-    if (debugDiv) debugDiv.innerText = '[SimDron] ERROR: ' + (err && err.message ? err.message : err);
-    console.error('Error en runSimulation:', err);
+    console.error("Error en runSimulation:", err);
+    alert("No se pudo ejecutar la simulación: " + err.message);
   }
+  
+  return false;
 }
 
-// --- Gráficas ---
+// --- Renderizado de gráficas ---
 function renderCharts(data) {
-  console.log('[SimDron] renderCharts data:', data);
+  // --- RESUMEN DE RESULTADOS ---
+  const summaryDiv = document.getElementById('simSummary');
+  if (summaryDiv) {
+    // Magnitudes
+    const posMag = data.Position.map(p => Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2));
+    const velMag = data.Velocity.map(v => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2));
+    const timeArr = data.Time || Array.from({length: data.Position.length}, (_, i) => i * (data.dt || 0.1));
+    // Distancia total recorrida
+    const distTotal = posMag.length > 0 ? (posMag[posMag.length-1] - posMag[0]).toFixed(2) : '0';
+    // Velocidad máxima y mínima
+    const velMax = velMag.length > 0 ? Math.max(...velMag).toFixed(2) : '0';
+    const velMin = velMag.length > 0 ? Math.min(...velMag).toFixed(2) : '0';
+    // Tiempo total
+    const tTotal = timeArr.length > 0 ? timeArr[timeArr.length-1].toFixed(2) : '0';
+    // Texto explicativo
+    let texto = `El dron recorrió <b>${distTotal} m</b> en <b>${tTotal} s</b>.<br>`;
+    texto += `Velocidad máxima: <b>${velMax} m/s</b>, mínima: <b>${velMin} m/s</b>.<br>`;
+    if (velMax === velMin && velMax !== '0') {
+      texto += 'El dron mantuvo velocidad constante.';
+    } else if (velMax === '0') {
+      texto += 'El dron permaneció en reposo.';
+    } else {
+      texto += 'El dron aceleró o frenó durante la simulación.';
+    }
+    summaryDiv.innerHTML = texto;
+  }
+
   const positionArr = data.Position;
   const velocityArr = data.Velocity;
-  const timeArr = data.Time || (positionArr && Array.isArray(positionArr) ? Array.from({length: positionArr.length}, (_, i) => i * (data.dt || 0.1)) : []);
-  if (!positionArr || !velocityArr || !Array.isArray(positionArr) || !Array.isArray(velocityArr) || positionArr.length === 0 || velocityArr.length === 0) {
-    mostrarErrorGrafica('No hay datos válidos para graficar.', false);
-    return;
-  }
-  if (!Array.isArray(timeArr) || timeArr.length !== positionArr.length) {
-    mostrarErrorGrafica('Datos de tiempo inconsistentes.', false);
-    return;
-  }
-  const posMag = positionArr.map(p => Array.isArray(p) && p.length === 3 ? Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2) : 0);
-  const velMag = velocityArr.map(v => Array.isArray(v) && v.length === 3 ? Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2) : 0);
+  const timeArr = data.Time || Array.from({length: positionArr.length}, (_, i) => i * (data.dt || 0.1));
+
+  // Magnitudes
+  const posMag = positionArr.map(p => Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2));
+  const velMag = velocityArr.map(v => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2));
+
+  // === POSICIÓN ===
   const posCanvas = document.getElementById('simChartPos');
   if (!posCanvas) return;
   const posCtx = posCanvas.getContext('2d');
   if (window.positionChartInstance) window.positionChartInstance.destroy();
-  try {
-    window.positionChartInstance = new Chart(posCtx, {
-      type: 'line',
-      data: {
-        labels: timeArr,
-        datasets: [{
-          label: 'Posición (módulo)',
-          data: posMag,
-          borderColor: 'rgba(54, 162, 235, 1)',
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          fill: true,
-          tension: 0.1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: true } },
-        scales: {
-          x: { title: { display: true, text: 'Tiempo (s)' } },
-          y: { title: { display: true, text: 'Posición (m)' } }
-        }
+
+  window.positionChartInstance = new Chart(posCtx, {
+    type: 'line',
+    data: {
+      labels: timeArr,
+      datasets: [{
+        label: 'Posición (módulo)',
+        data: posMag,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        fill: true,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { title: { display: true, text: 'Tiempo (s)' } },
+        y: { title: { display: true, text: 'Posición (m)' } }
       }
-    });
-  } catch (e) {
-    mostrarErrorGrafica('Error al graficar posición: ' + e.message);
-    return;
-  }
+    }
+  });
+
+  // === VELOCIDAD ===
   const velCanvas = document.getElementById('simChartVel');
   if (!velCanvas) return;
   const velCtx = velCanvas.getContext('2d');
   if (window.velocityChartInstance) window.velocityChartInstance.destroy();
-  try {
-    window.velocityChartInstance = new Chart(velCtx, {
-      type: 'line',
-      data: {
-        labels: timeArr,
-        datasets: [{
-          label: 'Velocidad (módulo)',
-          data: velMag,
-          borderColor: 'rgba(255, 99, 132, 1)',
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          fill: true,
-          tension: 0.1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: true } },
-        scales: {
-          x: { title: { display: true, text: 'Tiempo (s)' } },
-          y: { title: { display: true, text: 'Velocidad (m/s)' } }
-        }
+
+  window.velocityChartInstance = new Chart(velCtx, {
+    type: 'line',
+    data: {
+      labels: timeArr,
+      datasets: [{
+        label: 'Velocidad (módulo)',
+        data: velMag,
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        fill: true,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { title: { display: true, text: 'Tiempo (s)' } },
+        y: { title: { display: true, text: 'Velocidad (m/s)' } }
       }
-    });
-  } catch (e) {
-    mostrarErrorGrafica('Error al graficar velocidad: ' + e.message);
-    return;
-  }
-  mostrarErrorGrafica("");
-}
-
-// --- Errores ---
-function mostrarErrorGrafica(msg) {
-  const chart3D = document.getElementById('simChartContainer');
-  if (!chart3D) return;
-  let errorDiv = document.getElementById('simErrorMsg');
-  if (msg) {
-    if (!errorDiv) {
-      errorDiv = document.createElement('div');
-      errorDiv.id = 'simErrorMsg';
-      errorDiv.className = 'flex items-center justify-center h-full text-red-400 text-lg absolute top-0 left-0 w-full pointer-events-none';
-      chart3D.appendChild(errorDiv);
     }
-    errorDiv.innerHTML = msg;
-    errorDiv.style.display = 'flex';
-  } else {
-    if (errorDiv) errorDiv.style.display = 'none';
-  }
+  });
 }
 
-// --- 3D ---
+
+// --- Renderizado 3D ---
 function render3DTrajectory(data) {
-  console.log('[SimDron] render3DTrajectory data:', data);
-  const container = document.getElementById('simChartContainer');
-  // No borres el innerHTML, solo elimina el canvas de Three.js si existe
-  const oldCanvas = container.querySelector('canvas');
-  if (oldCanvas) container.removeChild(oldCanvas);
-  // Elimina overlays de error si existen
-  const errorDiv = document.getElementById('simErrorMsg');
-  if (errorDiv) errorDiv.style.display = 'none';
+  const container = document.getElementById("simChartContainer");
+  container.innerHTML = "";
+
   const width = container.clientWidth;
   const height = container.clientHeight;
+
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
   container.appendChild(renderer.domElement);
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf0f0f0);
+
   const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
   camera.position.set(20, 20, 20);
+
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(10, 10, 10);
   scene.add(light);
   scene.add(new THREE.AmbientLight(0x404040));
-  const gridHelper = new THREE.GridHelper(50, 50);
-  scene.add(gridHelper);
-  const axesHelper = new THREE.AxesHelper(10);
-  scene.add(axesHelper);
+
+  scene.add(new THREE.GridHelper(50, 50));
+  scene.add(new THREE.AxesHelper(10));
+
   const points = data.Position.map(p => new THREE.Vector3(p[0], p[1], p[2]));
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
   const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-  const line = new THREE.Line(geometry, material);
-  scene.add(line);
-  const droneGeo = new THREE.SphereGeometry(0.3, 16, 16);
-  const droneMat = new THREE.MeshPhongMaterial({ color: 0x0000ff });
-  const droneMesh = new THREE.Mesh(droneGeo, droneMat);
+  scene.add(new THREE.Line(geometry, material));
+
+let droneMesh = null;
+const loader = new THREE.GLTFLoader();
+loader.load('models/drone.glb', function(gltf) {
+  droneMesh = gltf.scene;
+  // Ajusta el tamaño si es necesario
+  droneMesh.scale.set(3, 3, 3); // Cambia el factor según tu modelo
   scene.add(droneMesh);
+}, undefined, function(error) {
+  console.error('Error cargando el modelo de dron:', error);
+});
+
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
   let step = 0;
   function animate() {
-    requestAnimationFrame(animate);
-    if (step < points.length) {
-      droneMesh.position.copy(points[step]);
-      step++;
-    }
+    window._threeAnimation = requestAnimationFrame(animate);
+    
+
+    if (droneMesh && step < points.length) droneMesh.position.copy(points[step++]);
+
     controls.update();
     renderer.render(scene, camera);
   }
   animate();
 }
+
+
+
+
+/***********************
+ *   SISTEMA DE PESTAÑAS
+ ***********************/
+document.addEventListener("DOMContentLoaded", () => {
+
+    const tab3D = document.getElementById("tab3D");
+    const tabVel = document.getElementById("tabVel");
+    const tabPos = document.getElementById("tabPos");
+
+    const cont3D = document.getElementById("simChartContainer");
+    const contVel = document.getElementById("simChartVel");
+    const contPos = document.getElementById("simChartPos");
+
+    function hideAll() {
+        cont3D.style.display = "none";
+        contVel.style.display = "none";
+        contPos.style.display = "none";
+
+        tab3D.classList.remove("bg-sky", "text-white");
+        tabVel.classList.remove("bg-sky", "text-white");
+        tabPos.classList.remove("bg-sky", "text-white");
+
+        tab3D.classList.add("bg-gray-400", "text-black");
+        tabVel.classList.add("bg-gray-400", "text-black");
+        tabPos.classList.add("bg-gray-400", "text-black");
+    }
+
+    // Mostrar contenedor específico
+    function showTab(which) {
+        hideAll();
+
+        if (which === "3d") {
+            cont3D.style.display = "block";
+            tab3D.classList.add("bg-sky", "text-white");
+        }
+
+        if (which === "vel") {
+            contVel.style.display = "block";
+            tabVel.classList.add("bg-sky", "text-white");
+
+            if (window.velocityChartInstance) {
+                window.velocityChartInstance.resize();
+                window.velocityChartInstance.update();
+            }
+        }
+
+        if (which === "pos") {
+            contPos.style.display = "block";
+            tabPos.classList.add("bg-sky", "text-white");
+
+            if (window.positionChartInstance) {
+                window.positionChartInstance.resize();
+                window.positionChartInstance.update();
+            }
+        }
+    }
+
+    // Listeners
+    tab3D.addEventListener("click", () => showTab("3d"));
+    tabVel.addEventListener("click", () => showTab("vel"));
+    tabPos.addEventListener("click", () => showTab("pos"));
+
+    // Activar 3D por defecto
+    showTab("3d");
+});
+
+
+
+// ===============================================
+// CARGAR ÚLTIMA SIMULACIÓN AL ENTRAR A LA PÁGINA
+// ===============================================
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const res = await fetch("http://127.0.0.1:5002/logs");
+    if (!res.ok) throw new Error("No se pudo obtener logs");
+
+    const logs = await res.json();
+    if (!Array.isArray(logs) || logs.length === 0) {
+      console.log("No hay simulaciones guardadas.");
+      return;
+    }
+
+    const last = logs[0]; // Última simulación
+    console.log("Última simulación cargada:", last);
+
+    // Dibujar gráficas y 3D
+    render3DTrajectory(last.result);
+    renderCharts(last.result);
+
+    // Mostrar 3D al inicio
+    document.getElementById("tab3D").click();
+
+    // Asegurar que las gráficas existen pero ocultas
+    document.getElementById("simChartVel").classList.add("hidden");
+    document.getElementById("simChartPos").classList.add("hidden");
+    document.getElementById("simChartContainer").classList.remove("hidden");
+
+  } catch (err) {
+    console.error("Error cargando última simulación:", err);
+  }
+});
+
+

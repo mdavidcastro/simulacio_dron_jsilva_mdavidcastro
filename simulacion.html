@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simulación de Vuelo | AeroMundo</title>
+  <title>Simulación Vuelo vs Entorno | AeroMundo</title>
+
   <!-- TailwindCSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Configuración personalizada -->
   <script>
     tailwind.config = {
       theme: {
@@ -19,92 +22,155 @@
       }
     };
   </script>
-  <!-- Chart.js & Three.js -->
+
+  <!-- Scripts de simulación -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+  <script src="js/analysis.js"></script>
 </head>
-<body class="bg-gradient-to-br from-deep to-ocean text-white min-h-screen flex flex-col font-[Segoe_UI]">
+
+<body class="bg-gradient-to-br from-deep to-ocean text-white min-h-screen flex flex-col font-[Segoe_UI]" onsubmit="return false;">
+
+  <!-- Header con logo textual a la derecha (link a index.html) -->
   <header class="bg-black/60 backdrop-blur-md shadow-lg py-6 px-8 flex items-center justify-between">
+    <!-- Izquierda: título y subtítulo -->
     <div class="flex-1">
-      <h1 class="text-4xl font-bold text-sky drop-shadow-lg">Simulación de Vuelo</h1>
-      <p class="text-gray-300 italic">Interfaz Moderna y Visualización</p>
+      <h1 class="text-4xl font-bold text-sky drop-shadow-lg">Simulación de Vuelo en Entorno</h1>
+      <p class="text-gray-300 italic">Sistema de Control y Visualización en Tiempo Real</p>
     </div>
+
+    <!-- Derecha: logo textual que linkea a index.html -->
     <a href="index.html" class="ml-6 flex items-center gap-3 hover:opacity-90 transition">
+      <!-- Si prefieres un logo imagen, reemplaza el <span> por <img src="img/logo.png" ...> -->
       <span class="text-2xl font-bold text-sky drop-shadow-lg">AeroMundo</span>
+      <!-- pequeño descriptor/icono opcional -->
       <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l6-6 6 6 6-6" />
       </svg>
     </a>
   </header>
+
+  <!-- Layout principal -->
   <main class="flex flex-1 flex-col md:flex-row">
-    <!-- Panel lateral: Formulario de parámetros -->
+
+    <!-- Panel lateral -->
     <aside class="md:w-1/3 lg:w-1/4 bg-white/10 backdrop-blur-md p-6 border-r border-sky/20 shadow-lg flex flex-col gap-6">
-      <form id="simForm" class="space-y-6">
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold text-sky">📡 Parámetros del Drone</h3>
-          <label class="block text-sm text-gray-200">Masa del Dron (kg):
-            <input type="number" id="mass" value="1.0" min="0.01" step="0.01" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" required />
-          </label>
-          <label class="block text-sm text-gray-200">Posición (x,y,z):
-            <input id="position" value="0,0,0" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" required />
-          </label>
-          <label class="block text-sm text-gray-200">Velocidad (vx,vy,vz):
-            <input id="velocity" value="0,0,0" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" required />
-          </label>
+<!-- Parámetros del Drone -->
+<div class="space-y-3">
+  <h3 class="text-lg font-semibold text-sky">📡 Parámetros del Drone</h3>
+  <div class="space-y-2">
+    <label class="block text-sm text-gray-200">
+      Masa del Dron (kg):
+      <input type="number" id="mass" value="1.0" min="0.01" step="0.01"
+        class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" />
+    </label>
+  </div>
+  <div class="space-y-2">
+    <label class="block text-sm text-gray-200">
+      Posición (x,y,z):
+      <input id="position" value="0,0,0" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" />
+    </label>
+  </div>
+  <div class="space-y-2">
+    <label class="block text-sm text-gray-200">
+      Velocidad (vx,vy,vz):
+      <input id="velocity" value="0,0,0" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" />
+    </label>
+  </div>
+</div>
+
+<!-- Parámetros del Entorno -->
+<div class="space-y-3">
+  <h3 class="text-lg font-semibold text-sky">🌍 Parámetros del Entorno</h3>
+  <div class="space-y-2">
+    <label class="block text-sm text-gray-200">
+      Viento (wx,wy,wz):
+      <input id="wind" value="0,0,0" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" />
+    </label>
+  </div>
+  <div class="space-y-2">
+    <label class="block text-sm text-gray-200">
+      Gravedad (m/s²):
+      <input type="number" id="gravity" value="9.81" step="0.01"
+        class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" />
+    </label>
+  </div>
+  <div class="space-y-2">
+    <label class="block text-sm text-gray-200">
+      Coeficiente de Resistencia del Aire (Drag):
+      <input type="number" id="drag" value="0.1" min="0" step="0.01"
+        class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" />
+    </label>
+  </div>
+</div>
+        <div class="flex flex-wrap gap-3">
+          <button type="button" onclick="runSimulation()" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded shadow-md transition">▶️ Ejecutar</button>
         </div>
-        <div class="space-y-3">
-          <h3 class="text-lg font-semibold text-sky">🌍 Parámetros del Entorno</h3>
-          <label class="block text-sm text-gray-200">Viento (wx,wy,wz):
-            <input id="wind" value="0,0,0" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" required />
-          </label>
-          <label class="block text-sm text-gray-200">Gravedad (m/s²):
-            <input type="number" id="gravity" value="9.81" step="0.01" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" required />
-          </label>
-          <label class="block text-sm text-gray-200">Coeficiente de Resistencia del Aire (Drag):
-            <input type="number" id="drag" value="0.1" min="0" step="0.01" class="w-full p-2 rounded bg-black/40 border border-sky/30 focus:outline-none focus:ring-2 focus:ring-sky" required />
-          </label>
-        </div>
-        <div class="space-y-4">
-          <button type="button" onclick="runSimulation()" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded shadow-md transition w-full">▶️ Ejecutar Simulación</button>
-        </div>
-      </form>
-    </aside>
-    <!-- Panel principal: Tabs y visualización -->
-    <section class="flex-1 flex flex-col items-center justify-start p-6">
-      <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg w-full max-w-5xl p-6 border border-sky/20">
-        <h2 class="text-2xl font-bold text-sky mb-2">Simulación y Gráficas</h2>
-        <div id="simInfoBox" class="mb-4 p-3 rounded bg-black/30 border border-sky/30 text-sm text-sky">
-          <b>¿Cómo interpretar las gráficas?</b><br>
-          <ul class="list-disc ml-5">
-            <li><b>Velocidad:</b> Muestra la rapidez del dron en cada instante. Si la curva sube, el dron acelera; si baja, frena.</li>
-            <li><b>Posición:</b> Muestra la distancia total recorrida desde el punto inicial. Si la curva sube, el dron se aleja; si es plana, está quieto.</li>
-          </ul>
-          <span id="simParamsSummary" class="block mt-2 text-xs text-sky-200"></span>
-        </div>
-        <div class="w-full">
-          <div class="flex gap-2 mb-2">
-            <button type="button" id="tab3D" class="bg-sky text-white px-4 py-2 rounded-t-lg font-semibold shadow focus:outline-none cursor-pointer z-20">Trayectoria 3D</button>
-            <button type="button" id="tabVel" class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow focus:outline-none cursor-pointer z-20">Velocidad</button>
-            <button type="button" id="tabPos" class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow focus:outline-none cursor-pointer z-20">Posición</button>
-          </div>
-          <div id="simTabsContent" class="relative w-full h-[400px]">
-            <div id="simChartContainer" style="width:100%;height:100%;display:block;" class="border border-gray-300 rounded-md bg-black/20"></div>
-            <div id="simChartVelWrapper" style="width:100%;height:100%;display:none;">
-              <canvas id="simChartVel" style="width:100%;height:100%;" class="bg-white rounded shadow"></canvas>
-            </div>
-            <div id="simChartPosWrapper" style="width:100%;height:100%;display:none;">
-              <canvas id="simChartPos" style="width:100%;height:100%;" class="bg-white rounded shadow"></canvas>
-            </div>
-          </div>
-        </div>
+
+    
+
       </div>
-    </section>
+    </aside>
+
+    <!-- Panel principal 3D -->
+    <section class="flex-1 flex flex-col items-center justify-start p-6">
+  <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg w-full max-w-5xl p-6 border border-sky/20">
+    <h2 class="text-2xl font-bold text-sky mb-4">Simulación y Gráficas</h2>
+
+  <!-- Resumen de resultados -->
+  <div id="simSummary" class="mb-4 p-3 rounded bg-sky/10 text-sky-200 text-base font-semibold"></div>
+
+    <div class="w-full">
+      <div class="flex gap-2 mb-2">
+        <button id="tab3D"
+                class="bg-sky text-white px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer z-20">
+          Trayectoria 3D
+        </button>
+
+        <button id="tabVel"
+                class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer z-20">
+          Velocidad
+        </button>
+
+        <button id="tabPos"
+                class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer z-20">
+          Posición
+        </button>
+      </div>
+
+      <div id="simTabsContent" class="relative w-full h-[400px]">
+
+        <!-- Contenedor 3D visible por defecto -->
+        <div id="simChartContainer"
+             class="absolute top-0 left-0 w-full h-full border border-gray-300 rounded-md bg-black/20"
+             style="display: block;">
+        </div>
+
+        <!-- Canvas Velocidad - oculto al inicio -->
+        <canvas id="simChartVel"
+                class="absolute top-0 left-0 w-full h-full bg-white rounded shadow"
+                style="display: none;">
+        </canvas>
+
+        <!-- Canvas Posición - oculto al inicio -->
+        <canvas id="simChartPos"
+                class="absolute top-0 left-0 w-full h-full bg-white rounded shadow"
+                style="display: none;">
+        </canvas>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
   </main>
+
   <footer class="bg-black/60 text-center py-4 mt-auto">
     <p class="text-gray-300 text-sm">&copy; 2025 AeroMundo — Simulación de Drones</p>
   </footer>
-  <div id="simDebugMsg" style="position:fixed;bottom:10px;left:10px;z-index:9999;background:#222;color:#0ff;padding:6px 16px;border-radius:8px;font-size:14px;opacity:0.85;pointer-events:none;">[SimDron] JS cargado</div>
-  <script src="js/analysis.js"></script>
-</body>
+
+</body >
 </html>

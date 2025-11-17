@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <!-- GLTFLoader para modelos .glb -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Logs de Simulaciones</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="js/logs.js" defer></script>
+  <!-- Three.js para la gráfica 3D -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+  <!-- GLTFLoader para modelos .glb (debe ir después de Three.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- Chart.js para las gráficas 2D -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="js/logs.js"></script>
+  <link rel="icon" type="image/png" href="img/Hero.png">
 </head>
 <body class="bg-gray-100">
   <div class="max-w-5xl mx-auto mt-10 p-4">
@@ -15,8 +23,5 @@
     <!-- Nuevo contenedor para logs -->
     <div id="logsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
   </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', fetchLogs);
-  </script>
 </body>
 </html>
