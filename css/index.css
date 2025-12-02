@@ -1,0 +1,48 @@
+/* Fondo de ondas */
+#waves {
+  position: absolute;
+  inset: 0;
+  background: url('https://www.transparenttextures.com/patterns/waves.png');
+  opacity: 0.2;
+  animation: wave 15s linear infinite;
+  border-radius: 1rem;
+}
+
+@keyframes wave {
+  0% { background-position: 0 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* Efecto neón + hover en las cards */
+.group:hover .card {
+  box-shadow: 0 0 20px #1e90ff, 0 0 40px #00ffff;
+  border-color: #00ffff;
+  transform: translateY(-5px) scale(1.05);
+  transition: all 0.4s ease-in-out;
+}
+
+/* Glass + partículas */
+.simulations::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 50px rgba(255,255,255,0.1) inset;
+  border-radius: 1rem;
+  pointer-events: none;
+}
+
+.simulations::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px);
+  background-size: 20px 20px;
+  animation: moveParticles 10s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes moveParticles {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 100px; }
+}

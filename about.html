@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AeroMundo | Acerca de</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ocean: '#2c5364',
+                        deep: '#0f2027',
+                        sky: '#1e90ff',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
+        }
+        .accordion-open {
+            max-height: 500px;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-deep to-ocean min-h-screen text-white font-[Segoe_UI]">
+
+    <!-- HEADER -->
+    <header class="bg-black/60 backdrop-blur-sm shadow-lg py-4 px-8 flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-sky">AeroMundo</h1>
+        <nav>
+            <a href="index.html" class="ml-6 flex items-center gap-3 hover:opacity-90 transition">
+      <!-- Si prefieres un logo imagen, reemplaza el <span> por <img src="img/logo.png" ...> -->
+      <span class="text-2xl font-bold text-sky drop-shadow-lg">AeroMundo</span>
+      <!-- pequeño descriptor/icono opcional -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l6-6 6 6 6-6" />
+      </svg>
+    </a>
+        </nav>
+    </header>
+
+    <!-- HERO -->
+    <section class="py-16 text-center">
+        <h2 class="text-5xl font-bold mb-2 drop-shadow-md">Acerca de AeroMundo</h2>
+        <p class="text-gray-200 text-xl italic">Una plataforma de simulación construida sobre análisis matemático y visualización avanzada.</p>
+    </section>
+
+    <!-- CONTENIDO -->
+    <section class="max-w-5xl mx-auto px-6 pb-20">
+        
+        <!-- INTRO -->
+        <div class="bg-white/20 backdrop-blur-md border border-white/20 p-8 rounded-2xl shadow-xl mb-10">
+            <h3 class="text-3xl font-bold text-sky mb-4">Visión General</h3>
+            <p class="text-gray-100 leading-relaxed">
+                AeroMundo combina modelación física, simulación numérica, gráficos 3D y análisis automatizado para estudiar el comportamiento de drones en vuelo.
+                El sistema se divide en dos componentes principales: un entorno visual interactivo en el navegador y un motor de simulación basado en Python,
+                que calcula el movimiento a partir de ecuaciones diferenciales de primer orden.
+            </p>
+        </div>
+
+        <!-- ACCORDION -->
+        <div class="space-y-6">
+
+            <!-- FRONTEND -->
+            <div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur-md shadow-lg">
+                <button onclick="toggleAccordion(1)" class="w-full text-left text-2xl font-semibold text-sky flex justify-between items-center">
+                    🖥️ Frontend — Interfaz y Visualización
+                    <span id="icon1" class="text-xl">▼</span>
+                </button>
+                <div id="acc1" class="accordion-content text-gray-200 mt-4 leading-relaxed">
+                    <p>
+                        La interfaz del usuario está construida con un diseño moderno basado en gradientes, transparencias y tipografía clara.
+                        Utiliza herramientas como:
+                    </p>
+                    <ul class="list-disc ml-6 mt-3">
+                        <li>TailwindCSS para estilos responsivos y animaciones.</li>
+                        <li>JavaScript para manejar interacción, validación e interactividad.</li>
+                        <li>Un sistema visual que integra pestañas, tarjetas y secciones dinámicas.</li>
+                    </ul>
+
+                    <p class="mt-4">
+                        Desde esta capa se envían los parámetros seleccionados por el usuario —posición inicial, velocidad, gravedad, viento y resistencia del aire—
+                        hacia el motor de simulación. Cuando los resultados regresan, la interfaz se encarga de representarlos en forma de gráficos o escenas 3D.
+                    </p>
+                </div>
+            </div>
+
+            <!-- BACKEND PYTHON -->
+            <div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur-md shadow-lg">
+                <button onclick="toggleAccordion(2)" class="w-full text-left text-2xl font-semibold text-sky flex justify-between items-center">
+                    🧠 Backend — Motor de Física en Python
+                    <span id="icon2" class="text-xl">▼</span>
+                </button>
+                <div id="acc2" class="accordion-content text-gray-200 mt-4 leading-relaxed">
+                    <p>El motor físico está implementado en Python usando una arquitectura ligera pero robusta. Utiliza:</p>
+                    <ul class="list-disc ml-6 mt-3">
+                        <li>Flask para recibir y devolver datos al navegador.</li>
+                        <li>Numpy para cálculos vectoriales y algebra lineal.</li>
+                        <li>SQLite para almacenar todas las simulaciones realizadas.</li>
+                        <li>Métodos numéricos para resolver ecuaciones diferenciales.</li>
+                    </ul>
+
+                    <p class="mt-4">
+                        La simulación aplica fuerzas fundamentales:
+                        gravedad, viento y resistencia aerodinámica. Estas se combinan siguiendo ecuaciones diferenciales de primer orden
+                        que describen la evolución de la velocidad y la posición.
+                    </p>
+
+                    <p class="mt-4">
+                        Para resolverlas, utiliza el método de integración
+                        <strong>Runge–Kutta de cuarto orden (RK4)</strong>, ampliamente usado en aeronáutica por su precisión y estabilidad.
+                    </p>
+                </div>
+            </div>
+
+            <!-- GRAFICAS -->
+            <div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur-md shadow-lg">
+                <button onclick="toggleAccordion(3)" class="w-full text-left text-2xl font-semibold text-sky flex justify-between items-center">
+                    📊 Sistema de Gráficas
+                    <span id="icon3" class="text-xl">▼</span>
+                </button>
+                <div id="acc3" class="accordion-content text-gray-200 mt-4 leading-relaxed">
+                    <p>
+                        Los resultados de la simulación son procesados para obtener variables como:
+                    </p>
+
+                    <ul class="list-disc ml-6 mt-3">
+                        <li>Módulo de la posición</li>
+                        <li>Módulo de la velocidad</li>
+                        <li>Distancia recorrida</li>
+                        <li>Aceleraciones aproximadas</li>
+                    </ul>
+
+                    <p class="mt-4">
+                        Todo esto se representa mediante gráficos generados dinámicamente utilizando bibliotecas especializadas de visualización.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3D -->
+            <div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur-md shadow-lg">
+                <button onclick="toggleAccordion(4)" class="w-full text-left text-2xl font-semibold text-sky flex justify-between items-center">
+                    🌐 Renderizado 3D
+                    <span id="icon4" class="text-xl">▼</span>
+                </button>
+                <div id="acc4" class="accordion-content text-gray-200 mt-4 leading-relaxed">
+                    <p>
+                        AeroMundo incorpora un entorno de visualización tridimensional donde se muestra la trayectoria simulada del dron.
+                        El sistema usa un motor 3D basado en WebGL para construir escenas que incluyen:
+                    </p>
+
+                    <ul class="list-disc ml-6 mt-3">
+                        <li>Grillas tridimensionales</li>
+                        <li>Controles orbitales de cámara</li>
+                        <li>Modelos 3D de drones</li>
+                        <li>Líneas animadas que representan la trayectoria</li>
+                    </ul>
+
+                    <p class="mt-4">
+                        Esta vista permite analizar el comportamiento espacial del dron, detectar inestabilidades y comprender mejor la física del movimiento.
+                    </p>
+                </div>
+            </div>
+
+            <!-- LOGS -->
+            <div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur-md shadow-lg">
+                <button onclick="toggleAccordion(5)" class="w-full text-left text-2xl font-semibold text-sky flex justify-between items-center">
+                    📁 Logs y Análisis Automático
+                    <span id="icon5" class="text-xl">▼</span>
+                </button>
+                <div id="acc5" class="accordion-content text-gray-200 mt-4 leading-relaxed">
+                    <p>
+                        Cada simulación queda registrada en una base de datos local. El sistema almacena:
+                    </p>
+
+                    <ul class="list-disc ml-6 mt-3">
+                        <li>Condiciones iniciales</li>
+                        <li>Parámetros del entorno</li>
+                        <li>Datos de trayectoria</li>
+                        <li>Fecha y hora</li>
+                    </ul>
+
+                    <p class="mt-4">
+                        Luego, una interfaz dedicada permite explorar el historial mediante tarjetas interactivas.
+                        Cada log puede abrirse en un modal con:
+                    </p>
+
+                    <ul class="list-disc ml-6 mt-3">
+                        <li>Vista 3D</li>
+                        <li>Gráficas</li>
+                        <li>Evaluaciones de seguridad del vuelo</li>
+                        <li>Resumen de comportamiento</li>
+                    </ul>
+
+                    <p class="mt-4">
+                        Este módulo transforma la simulación en un verdadero laboratorio digital,
+                        permitiendo comparar escenarios, estudiar fallos y evaluar riesgos.
+                    </p>
+                </div>
+            </div>
+            <!-- MÉTODOS NUMÉRICOS -->
+<div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur-md shadow-lg">
+    <button onclick="toggleAccordion(6)" class="w-full text-left text-2xl font-semibold text-sky flex justify-between items-center">
+        🧮 Métodos Numéricos Utilizados
+        <span id="icon6" class="text-xl">▼</span>
+    </button>
+
+    <div id="acc6" class="accordion-content text-gray-200 mt-4 leading-relaxed">
+        <p>
+            Para resolver las ecuaciones diferenciales que describen el movimiento del dron,
+            AeroMundo emplea técnicas numéricas ampliamente utilizadas en simulación,
+            ingeniería y aeronáutica. Estos métodos aproximan soluciones que no pueden 
+            calcularse de forma exacta.
+        </p>
+
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            <div class="bg-black/20 p-4 rounded-lg border border-white/10">
+                <h4 class="font-semibold text-sky mb-1">Método de Euler</h4>
+                <p class="text-sm text-gray-300">Rápido y simple, útil como referencia, pero poco preciso para dinámicas complejas.</p>
+            </div>
+
+            <div class="bg-black/20 p-4 rounded-lg border border-white/10">
+                <h4 class="font-semibold text-sky mb-1">Runge–Kutta (RK2, RK4)</h4>
+                <p class="text-sm text-gray-300">Métodos de alta precisión ideales para simulaciones físicas y sistemas aeroespaciales.</p>
+            </div>
+
+            <div class="bg-black/20 p-4 rounded-lg border border-white/10">
+                <h4 class="font-semibold text-sky mb-1">Newton–Raphson</h4>
+                <p class="text-sm text-gray-300">Perfecto para resolver ecuaciones no lineales complejas.</p>
+            </div>
+
+            <div class="bg-black/20 p-4 rounded-lg border border-white/10">
+                <h4 class="font-semibold text-sky mb-1">Integración Trapezoidal / Simpson</h4>
+                <p class="text-sm text-gray-300">Usadas para integrar funciones difíciles de evaluar analíticamente.</p>
+            </div>
+
+            <div class="bg-black/20 p-4 rounded-lg border border-white/10">
+                <h4 class="font-semibold text-sky mb-1">Jacobi / Gauss–Seidel</h4>
+                <p class="text-sm text-gray-300">Métodos iterativos para resolver sistemas de ecuaciones grandes.</p>
+            </div>
+
+        </div>
+
+        <p class="mt-4">
+            En AeroMundo, el método principal utilizado es 
+            <strong class="text-sky">Runge–Kutta de 4° orden (RK4)</strong>, 
+            elegido por su equilibrio entre estabilidad, eficiencia y precisión.
+        </p>
+    </div>
+</div>
+
+
+        </div>
+    </section>
+    
+<section class="max-w-6xl mx-auto px-6 mt-16 mb-20">
+    <div class="bg-white/20 backdrop-blur-md border border-white/20 p-10 rounded-2xl shadow-xl">
+        <h3 class="text-4xl font-bold text-sky mb-6 text-center">⚙️ Tecnologías Utilizadas</h3>
+
+        <p class="text-gray-100 text-center mb-10 max-w-3xl mx-auto">
+            AeroMundo integra una arquitectura híbrida entre un entorno visual interactivo y un motor 
+            matemático especializado. Estas son las tecnologías, librerías y herramientas que hacen posible 
+            la simulación dinámica del dron y su análisis avanzado.
+        </p>
+
+        <!-- GRID GENERAL -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-10 items-center text-center">
+
+            <!-- PYTHON -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">Python</span>
+            </div>
+
+            <!-- FLASK -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg"
+                     class="w-16 h-16 drop-shadow-lg invert">
+                <span class="mt-3 text-gray-200 text-sm">Flask</span>
+            </div>
+
+            <!-- NUMPY -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/numpy/numpy-original.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">NumPy</span>
+            </div>
+
+            <!-- SQLITE -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/sqlite/sqlite-original.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">SQLite</span>
+            </div>
+
+            <!-- JAVASCRIPT -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">JavaScript</span>
+            </div>
+
+            <!-- TAILWIND CSS (ARREGLADO) -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://www.vectorlogo.zone/logos/tailwindcss/tailwindcss-icon.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">TailwindCSS</span>
+            </div>
+
+            <!-- THREE JS -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/threejs/threejs-original.svg"
+                     class="w-16 h-16 drop-shadow-lg invert">
+                <span class="mt-3 text-gray-200 text-sm">Three.js</span>
+            </div>
+
+            <!-- CHART JS -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://www.chartjs.org/img/chartjs-logo.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">Chart.js</span>
+            </div>
+
+            <!-- HTML5 -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">HTML5</span>
+            </div>
+
+            <!-- CSS3 (MEJORADO) -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://www.vectorlogo.zone/logos/w3_css/w3_css-icon.svg"
+                     class="w-16 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">CSS3</span>
+            </div>
+
+            <!-- WEBGL -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/25/WebGL_Logo.svg"
+                     class="w-20 h-16 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">WebGL</span>
+            </div>
+
+
+            <!-- ARQUITECTURA CLIENTE-SERVIDOR -->
+            <div class="flex flex-col items-center hover:scale-110 transition">
+                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991133.png"
+                     class="w-14 h-14 drop-shadow-lg">
+                <span class="mt-3 text-gray-200 text-sm">Cliente / Servidor</span>
+            </div>
+
+        </div>
+
+        <p class="text-gray-200 mt-12 text-center text-sm max-w-3xl mx-auto">
+            Estas tecnologías trabajan en conjunto para proporcionar simulaciones físicas precisas,
+            visualización avanzada, análisis matemático automatizado y una experiencia fluida dentro del navegador.
+        </p>
+    </div>
+</section>
+
+
+    <footer class="bg-black/60 text-center py-4">
+        <p class="text-gray-400 text-sm">© 2025 AeroMundo — Simulación de Drones</p>
+    </footer>
+
+    <!-- Script accordion -->
+    <script src="js/about.js"></script>
+
+</body>
+</html>

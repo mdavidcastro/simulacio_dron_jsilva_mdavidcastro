@@ -28,7 +28,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
-  <script src="js/analysis.js"></script>
+  <script src="js/simulacion.js"></script>
 </head>
 
 <body class="bg-gradient-to-br from-deep to-ocean text-white min-h-screen flex flex-col font-[Segoe_UI]" onsubmit="return false;">
@@ -52,10 +52,10 @@
     </a>
   </header>
 
-  <!-- Layout principal -->
+  
   <main class="flex flex-1 flex-col md:flex-row">
 
-    <!-- Panel lateral -->
+    
     <aside class="md:w-1/3 lg:w-1/4 bg-white/10 backdrop-blur-md p-6 border-r border-sky/20 shadow-lg flex flex-col gap-6">
 <!-- Parámetros del Drone -->
 <div class="space-y-3">
@@ -114,63 +114,62 @@
       </div>
     </aside>
 
-    <!-- Panel principal 3D -->
-    <section class="flex-1 flex flex-col items-center justify-start p-6">
+    <!-- Panel principal -->
+ <section class="flex-1 flex flex-col items-center justify-start p-6">
   <div class="bg-white/10 backdrop-blur-md rounded-2xl shadow-lg w-full max-w-5xl p-6 border border-sky/20">
     <h2 class="text-2xl font-bold text-sky mb-4">Simulación y Gráficas</h2>
 
-  <!-- Resumen de resultados -->
-  <div id="simSummary" class="mb-4 p-3 rounded bg-sky/10 text-sky-200 text-base font-semibold"></div>
+    <!-- Resumen de resultados -->
+    <div id="simSummary" class="mb-4 p-3 rounded bg-sky/10 text-sky-200 text-base font-semibold"></div>
+    <div class="mb-4 p-2 rounded bg-gray-800/50 text-gray-300 text-sm">
+      🛈 Para ver la simulación en más detalle, incluyendo gráficas y análisis de seguridad, 
+      visita el apartado de <a href="log.html" class="text-sky underline">Logs de Simulación</a>.
+    </div>
 
-    <div class="w-full">
-      <div class="flex gap-2 mb-2">
+    <div class="w-full relative h-[400px]">
+      <!-- Botones de pestañas flotando sobre el canvas -->
+      <div class="absolute top-2 left-2 flex gap-2 z-30">
         <button id="tab3D"
-                class="bg-sky text-white px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer z-20">
-          Trayectoria 3D
+                class="bg-sky text-white px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer">
+          3D
         </button>
-
         <button id="tabVel"
-                class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer z-20">
+                class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer">
           Velocidad
         </button>
-
         <button id="tabPos"
-                class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer z-20">
+                class="bg-gray-400 text-black px-4 py-2 rounded-t-lg font-semibold shadow cursor-pointer">
           Posición
         </button>
       </div>
 
-      <div id="simTabsContent" class="relative w-full h-[400px]">
+      <!-- Contenedor 3D -->
+      <div id="simChartContainer"
+           class="absolute top-0 left-0 w-full h-full z-10 border border-gray-300 rounded-md bg-black/20">
+      </div>
 
-        <!-- Contenedor 3D visible por defecto -->
-        <div id="simChartContainer"
-             class="absolute top-0 left-0 w-full h-full border border-gray-300 rounded-md bg-black/20"
-             style="display: block;">
-        </div>
-
-        <!-- Canvas Velocidad - oculto al inicio -->
+      <!-- Contenedores de canvas de gráficos (Velocidad y Posición) -->
+      <div id="canvasContainer" class="absolute top-0 left-0 w-full h-full z-5">
         <canvas id="simChartVel"
                 class="absolute top-0 left-0 w-full h-full bg-white rounded shadow"
-                style="display: none;">
+                style="display:none;">
         </canvas>
-
-        <!-- Canvas Posición - oculto al inicio -->
         <canvas id="simChartPos"
                 class="absolute top-0 left-0 w-full h-full bg-white rounded shadow"
-                style="display: none;">
+                style="display:none;">
         </canvas>
-
       </div>
     </div>
-
   </div>
 </section>
+
 
   </main>
 
   <footer class="bg-black/60 text-center py-4 mt-auto">
     <p class="text-gray-300 text-sm">&copy; 2025 AeroMundo — Simulación de Drones</p>
   </footer>
+  
 
 </body >
 </html>

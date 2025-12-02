@@ -1,252 +1,489 @@
-// logs.js
-// Visualización de logs de simulaciones en log.html
 
-// Utilidad para calcular resumen
-function resumenSimulacion(data) {
-  if (!data || !data.Position || !data.Velocity) return '';
-  const posMag = data.Position.map(p => Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2));
-  const velMag = data.Velocity.map(v => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2));
-  const timeArr = data.Time || Array.from({length: data.Position.length}, (_, i) => i * (data.dt || 0.1));
-  const distTotal = posMag.length > 0 ? (posMag[posMag.length-1] - posMag[0]).toFixed(2) : '0';
-  const velMax = velMag.length > 0 ? Math.max(...velMag).toFixed(2) : '0';
-  const velMin = velMag.length > 0 ? Math.min(...velMag).toFixed(2) : '0';
-  const tTotal = timeArr.length > 0 ? timeArr[timeArr.length-1].toFixed(2) : '0';
-  let texto = `Distancia: <b>${distTotal} m</b><br>`;
-  texto += `Vel. máx: <b>${velMax} m/s</b>, mín: <b>${velMin} m/s</b><br>`;
-  texto += `Tiempo: <b>${tTotal} s</b>`;
-  return texto;
-}
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-async function fetchLogs() {
+let chartPosition = null;
+let chartVelocity = null;
+let scene, camera, renderer, controls;
+let isPaused = false;
+let droneStep = 0;
+let dronePoints = [];
+let droneMesh = null;
+// Exponer funciones globales
+window.closeModal = closeModal;
+window.showTab = showTab;
+//   CARGAR LOGS
+async function loadLogs() {
+  const loading = document.getElementById('loadingMsg');
   const container = document.getElementById('logsContainer');
-  container.innerHTML = '<div class="col-span-3 text-center text-gray-400">Cargando logs...</div>';
+
+  loading.style.display = 'block';
+  container.innerHTML = '';
+
+  let logs = [];
+
   try {
     const res = await fetch('http://127.0.0.1:5002/logs');
-    if (!res.ok) throw new Error('No se pudo obtener logs');
-    const logs = await res.json();
-    if (!Array.isArray(logs) || logs.length === 0) {
-      container.innerHTML = '<div class="col-span-3 text-center text-gray-400">No hay simulaciones guardadas.</div>';
-      return;
-    }
-    container.innerHTML = '';
-    logs.forEach((log, idx) => {
-      const fecha = formatFecha(log.fecha || log.date);
-      const resumen = resumenSimulacion(log.result);
-      const card = document.createElement('div');
-      card.className = 'bg-white rounded-lg shadow p-4 flex flex-col gap-2 hover:ring-2 hover:ring-blue-400 transition';
-      card.innerHTML = `
-        <div class='text-xs text-gray-500 mb-1'>${fecha}</div>
-        <div class='font-semibold text-blue-700'>Simulación #${logs.length-idx}</div>
-        <div class='text-sm text-gray-700 mb-2'>${resumen}</div>
-        <button class='ver-detalle bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1 text-xs font-bold self-end' data-idx='${idx}'>Ver detalle</button>
-      `;
-      container.appendChild(card);
-    });
-    // Listeners para ver detalle (modal)
-    container.querySelectorAll('.ver-detalle').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const idx = this.getAttribute('data-idx');
-        mostrarDetalleModal(logs[idx]);
-      });
-    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const data = await res.json();
+    logs = data.map(log => ({
+      timestamp: log.params?.Drone?.timestamp || Date.now(),
+      input: log.params,
+      result: log.result
+    }));
+
   } catch (err) {
-    container.innerHTML = '<div class="col-span-3 text-center text-red-400">Error cargando logs</div>';
-    console.error('Error cargando logs:', err);
+    console.error("Error cargando logs:", err);
+    logs = [];
+  } finally {
+    if (logs.length === 0) {
+      container.innerHTML = '<p class="col-span-full text-center text-yellow-300">⚠️ No hay simulaciones guardadas</p>';
+    } else {
+      logs.forEach((log, index) => {
+        container.appendChild(createLogCard(log, index, logs.length));
+      });
+    }
+
+    loading.style.display = 'none';
   }
 }
+//     TARJETAS DE LOGS
+function createLogCard(log, index, total) {
+  const card = document.createElement('div');
+  card.className = 'log-card p-6 rounded-xl shadow-lg cursor-pointer';
 
-// Modal helpers
-function crearModal() {
-  let modal = document.getElementById('modalDetalle');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'modalDetalle';
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden';
-    modal.innerHTML = `
-      <div class="bg-white rounded-lg shadow-lg max-w-3xl w-full p-6 relative flex flex-col gap-4">
-        <button id="cerrarModal" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-2xl font-bold">&times;</button>
-        <div id="modalContent"></div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    modal.querySelector('#cerrarModal').onclick = () => modal.classList.add('hidden');
-    modal.onclick = e => { if (e.target === modal) modal.classList.add('hidden'); };
-  }
-  return modal;
-}
+  const date = new Date(log.timestamp).toLocaleString('es-CO');
+  const id = `SIM-${index + 1}`;
 
-function abrirModal(html) {
-  const modal = crearModal();
-  modal.querySelector('#modalContent').innerHTML = html;
-  modal.classList.remove('hidden');
-}
-
-function formatFecha(fecha) {
-  if (!fecha) return '(sin fecha)';
-  // Intenta parsear y mostrar formato local
-  const d = new Date(fecha);
-  if (!isNaN(d)) return d.toLocaleString();
-  return fecha;
-}
-
-// Modal de detalles con 3 gráficas
-function mostrarDetalleModal(log) {
-  if (!log || !log.result) return;
-  // Modal content: resumen, 3 gráficas (vel, pos, 3D)
-  const idBase = 'id' + (log._id || Math.floor(Math.random()*1e6));
-  const html = `
-    <div class='mb-2 text-blue-800 font-semibold'>Resumen</div>
-    <div class='mb-2 text-gray-700 text-sm'>${resumenSimulacion(log.result)}</div>
-    <div class='flex flex-col md:flex-row gap-4'>
-      <div class='flex-1'><canvas id='chartVel${idBase}' class='w-full h-64 bg-gray-100 rounded'></canvas></div>
-      <div class='flex-1'><canvas id='chartPos${idBase}' class='w-full h-64 bg-gray-100 rounded'></canvas></div>
-    </div>
-    <div class='mt-4'>
-      <div class='font-semibold text-green-700 mb-1'>Trayectoria 3D</div>
-      <div id='threeContainer${idBase}' class='w-full h-64 bg-gray-100 rounded'></div>
+  card.innerHTML = `
+    <h3 class="text-lg font-bold">${id}</h3>
+    <p class="timestamp-badge mt-2">📅 ${date}</p>
+    <div class="mt-3 text-sm text-gray-300">
+      <p>Masa: ${log.input.Drone?.Mass || 'N/A'} kg</p>
+      <p>Puntos: ${log.result.Position?.length || 0}</p>
     </div>
   `;
-  abrirModal(html);
-  // Renderizar gráficas
-  setTimeout(() => {
-    renderChartVel(log.result, document.getElementById('chartVel'+idBase));
-    renderChartPos(log.result, document.getElementById('chartPos'+idBase));
-    renderThreeTraj(log.result, document.getElementById('threeContainer'+idBase));
-  }, 100);
-}
 
-// Renderizar trayectoria 3D usando Three.js si está disponible
-function renderThreeTraj(data, container) {
-  if (!container || !data.Position || typeof THREE === 'undefined' || typeof THREE.GLTFLoader === 'undefined') {
-    container.innerHTML = '<div class="text-gray-400 text-center mt-8">Three.js o GLTFLoader no cargado</div>';
+  card.onclick = () => openModal(log);
+  return card;
+}
+//modal
+function openModal(log) {
+  document.getElementById('modalTitle').textContent =
+    `Simulación: ${new Date(log.timestamp).toLocaleString('es-CO')}`;
+  
+  document.getElementById('visualModal').style.display = 'block';
+  showTab('3d');
+
+  render3D(log.result);
+  plotCharts(log.result);
+  showData(log);
+}
+function closeModal() {
+  document.getElementById('visualModal').style.display = 'none';  
+
+  if (renderer) {
+    renderer.dispose();
+    renderer.forceContextLoss();
+    renderer.domElement = null;
+
+    renderer = null;
+    scene = null;
+    camera = null;
+    controls = null;
+  }
+
+  const container = document.getElementById('chart3d');
+  container.innerHTML = '';
+}
+//pestañas
+function showTab(tab) {
+  const tabs = ['3d', 'charts', 'data'];
+
+  tabs.forEach(t => {
+    document.getElementById(t === '3d' ? 'tab3d' : 'tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
+    document.getElementById('content' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = 'none';
+  });
+
+  document.getElementById(tab === '3d' ? 'tab3d' : 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  document.getElementById('content' + tab.charAt(0).toUpperCase() + tab.slice(1)).style.display = 'block';
+}
+//la grafica 3d y sus funciones
+function render3D(data) {
+  const container = document.getElementById('chart3d');
+  container.innerHTML = '';
+
+  // Limpiar renderer previo
+  if (renderer) {
+    renderer.dispose();
+    renderer.forceContextLoss();
+    container.innerHTML = '';
+    renderer = null;
+    scene = null;
+    camera = null;
+    controls = null;
+  }
+
+  if (!data.Position || data.Position.length === 0) {
+    container.innerHTML = '<p class="text-center p-4 text-yellow-300">No hay datos 3D</p>';
     return;
   }
-  // Forzar tamaño del contenedor
-  container.style.minHeight = '256px';
-  container.style.height = '256px';
-  container.innerHTML = '';
-  console.log('[Three.js] Creando escena 3D...');
-  const scene = new THREE.Scene();
-  // Grid y ejes
-  const gridHelper = new THREE.GridHelper(10, 10);
-  scene.add(gridHelper);
-  const axesHelper = new THREE.AxesHelper(2);
-  scene.add(axesHelper);
-  // Trayectoria
-  const points = data.Position.map(p => new THREE.Vector3(p[0], p[1], p[2]));
-  const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  const material = new THREE.LineBasicMaterial({ color: 0x2563eb, linewidth: 3 });
-  const line = new THREE.Line(geometry, material);
-  scene.add(line);
-  // Cámara
-  const aspect = container.offsetWidth / container.offsetHeight;
-  const camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
-  let center = new THREE.Vector3(0,0,0);
-  if (points.length > 0) {
-    center = points.reduce((a, b) => a.add(b), new THREE.Vector3()).divideScalar(points.length);
-  }
-  camera.position.set(center.x + 5, center.y + 5, center.z + 5);
-  camera.lookAt(center);
-  // Luz ambiental y direccional
-  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-  const light = new THREE.DirectionalLight(0xffffff, 0.8);
-  light.position.set(10, 10, 10);
-  scene.add(light);
-  // Render
-  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-  renderer.setClearColor(0xcccccc); // Color de fondo visible
-  renderer.setSize(container.offsetWidth, container.offsetHeight);
-  container.appendChild(renderer.domElement);
-  console.log('[Three.js] Renderizador y canvas agregados', renderer.domElement);
-  // Animación para asegurar render tras carga
-  function animate() {
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
-  }
-  animate();
-  // Cargar modelo dron.glb en la última posición
-  if (points.length > 0) {
-    const last = points[points.length - 1];
-    const loader = new THREE.GLTFLoader();
-    loader.load('models/drone.glb', function(gltf) {
-      const drone = gltf.scene;
-      drone.position.copy(last);
-      // Centrar y escalar el modelo
-      drone.scale.set(0.5, 0.5, 0.5);
-      scene.add(drone);
-      console.log('[Three.js] Modelo drone.glb cargado y agregado a la escena');
-    }, undefined, function(error) {
-      // Si falla, mostrar esfera roja
-      const droneGeometry = new THREE.SphereGeometry(0.15, 32, 32);
-      const droneMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-      const droneMesh = new THREE.Mesh(droneGeometry, droneMaterial);
-      droneMesh.position.copy(last);
-      scene.add(droneMesh);
-      console.warn('[Three.js] No se pudo cargar drone.glb, usando esfera roja');
-    });
-  }
-}
 
-function renderChartVel(data, canvas) {
-  if (!canvas || !data.Velocity) return;
-  const ctx = canvas.getContext('2d');
-  const velMag = data.Velocity.map(v => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2));
-  const timeArr = data.Time || Array.from({length: data.Velocity.length}, (_, i) => i * (data.dt || 0.1));
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: timeArr,
-      datasets: [{
-        label: 'Velocidad (módulo)',
-        data: velMag,
-        borderColor: 'rgba(37, 99, 235, 1)',
-        backgroundColor: 'rgba(37, 99, 235, 0.2)',
-        fill: true,
-        tension: 0.1
-      }]
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(width, height);
+  container.appendChild(renderer.domElement);
+
+  // Escena
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xffffff);
+
+  // Cámara
+  camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+  camera.position.set(30, 30, 30);
+
+  // Luces
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(10, 20, 10);
+  scene.add(dirLight);
+  scene.add(new THREE.AmbientLight(0x404040));
+
+  // Grid y ejes
+  scene.add(new THREE.GridHelper(50, 50));
+  scene.add(new THREE.AxesHelper(10));
+
+  // Trayectoria
+  dronePoints = data.Position.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(dronePoints),
+    new THREE.LineBasicMaterial({ color: 0xff0000 })
+  );
+  scene.add(line);
+
+  // Mesh dron
+  new GLTFLoader().load(
+    "models/drone.glb",
+    gltf => {
+      droneMesh = gltf.scene;
+      droneMesh.scale.set(10, 10, 10);
+      droneMesh.position.copy(dronePoints[0]);
+      scene.add(droneMesh);
     },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: true } },
-      scales: {
-        x: { title: { display: true, text: 'Tiempo (s)' } },
-        y: { title: { display: true, text: 'Velocidad (m/s)' } }
-      }
+    undefined,
+    () => {
+      // fallback cubo
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshLambertMaterial({ color: 0x00aaff })
+      );
+      cube.position.copy(dronePoints[0]);
+      droneMesh = cube;
+      scene.add(cube);
+    }
+  );
+
+  // Controles
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enablePan = true;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxDistance = 100;
+  controls.minDistance = 5;
+  controls.maxPolarAngle = Math.PI * 0.495;
+  controls.target.set(0, 0, 0);
+
+  // Animación
+  droneStep = 0;
+  isPaused = false;
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    if (droneMesh && !isPaused && droneStep < dronePoints.length) {
+      droneMesh.position.copy(dronePoints[droneStep]);
+      droneStep++;
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  
+  window.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'c' && droneMesh) {
+      const offset = new THREE.Vector3(10, 10, 10);
+      camera.position.copy(droneMesh.position).add(offset);
+      controls.target.copy(droneMesh.position);
+      controls.update();
     }
   });
-}
 
-function renderChartPos(data, canvas) {
-  if (!canvas || !data.Position) return;
-  const ctx = canvas.getContext('2d');
-  const posMag = data.Position.map(p => Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2));
-  const timeArr = data.Time || Array.from({length: data.Position.length}, (_, i) => i * (data.dt || 0.1));
-  new Chart(ctx, {
+  
+  document.getElementById('btnPlay').onclick = () => { isPaused = false; };
+  document.getElementById('btnPause').onclick = () => { isPaused = true; };
+  document.getElementById('btnReset').onclick = () => {
+    isPaused = true;
+    droneStep = 0;
+    if (droneMesh) droneMesh.position.copy(dronePoints[0]);
+    controls.update();
+  };
+
+  //Ajustar tamaño 
+  window.addEventListener('resize', () => {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  });
+}
+//    GRÁFICAS
+function plotCharts(result) {
+  const timeArr = result.Time || Array.from({ length: result.Position.length }, (_, i) => i);
+    
+  const posMag = result.Position.map(p => Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2));
+  const velMag = result.Velocity.map(v => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2));
+
+  // POSICIÓN
+  const ctxPos = document.getElementById('chartPosition').getContext('2d');
+  if (chartPosition) chartPosition.destroy();
+
+  chartPosition = new Chart(ctxPos, {
     type: 'line',
     data: {
       labels: timeArr,
       datasets: [{
         label: 'Posición (módulo)',
         data: posMag,
-        borderColor: 'rgba(16, 185, 129, 1)',
-        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(173, 199, 216, 0.2)',
         fill: true,
         tension: 0.1
       }]
     },
     options: {
-      responsive: true,
-      plugins: { legend: { display: true } },
+      responsive: false,
+      maintainAspectRatio: false,
       scales: {
-        x: { title: { display: true, text: 'Tiempo (s)' } },
-        y: { title: { display: true, text: 'Posición (m)' } }
+        x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }},
+        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }}
+      }
+    }
+  });
+
+  // VELOCIDAD
+  const ctxVel = document.getElementById('chartVelocity').getContext('2d');
+  if (chartVelocity) chartVelocity.destroy();
+
+  chartVelocity = new Chart(ctxVel, {
+    type: 'line',
+    data: {
+      labels: timeArr,
+      datasets: [{
+        label: 'Velocidad (módulo)',
+        data: velMag,
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        fill: true,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: false,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }},
+        y: { ticks: { color: 'white' }, grid: { color: 'rgba(255,255,255,0.1)' }}
       }
     }
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', fetchLogs);
-} else {
-  fetchLogs();
+function showData(log) {
+  const container = document.getElementById('dataDetails');
+
+  const time = log.result.Time;
+  const pos = log.result.Position;
+  const vel = log.result.Velocity;
+  const dt = time[1] - time[0];
+
+  // ----- CÁLCULO DE MÓDULOS -----
+  const posMag = pos.map(p => Math.sqrt(p[0]**2 + p[1]**2 + p[2]**2));
+  const velMag = vel.map(v => Math.sqrt(v[0]**2 + v[1]**2 + v[2]**2));
+  const accMag = velMag.map((v, i) => (i === 0 ? 0 : Math.abs((v - velMag[i-1]) / dt)));
+
+  // ----- ESTADÍSTICAS -----
+  const posStats = {
+    min: Math.min(...posMag).toFixed(2),
+    max: Math.max(...posMag).toFixed(2),
+    avg: (posMag.reduce((a,b)=>a+b,0)/posMag.length).toFixed(2)
+  };
+
+  const velStats = {
+    min: Math.min(...velMag).toFixed(2),
+    max: Math.max(...velMag).toFixed(2),
+    avg: (velMag.reduce((a,b)=>a+b,0)/velMag.length).toFixed(2)
+  };
+
+  const accStats = {
+    max: Math.max(...accMag).toFixed(2),
+    avg: (accMag.reduce((a,b)=>a+b,0)/accMag.length).toFixed(2)
+  };
+
+  // =============================================================
+  //                  DETECCIÓN ROBUSTA DE ALTURA
+  // =============================================================
+
+  const TIEMPO_MIN_RELEVANTE = 1.0;     // Ignorar antes de 1s
+  const VENTANA_ESTABILIDAD = 0.3;      // Mínimo tiempo de persistencia
+  const ALTURA_MIN_SEGURA = 1.0;        // Hover razonable
+  const ALTURA_CRITICA_VUELO = 2.0;     // Vuelo seguro
+
+  // Detectar intervalos donde la altura está por debajo del límite segura
+  const lowAltitude = pos
+    .map((p, i) => ({ i, t: time[i], alt: p[2] }))
+    .filter(e => e.t > TIEMPO_MIN_RELEVANTE && e.alt < ALTURA_MIN_SEGURA);
+
+  let idxAltCrit = -1;
+
+  if (lowAltitude.length > 0) {
+    for (let k = 0; k < lowAltitude.length; k++) {
+      const start = lowAltitude[k].i;
+      const startTime = time[start];
+
+      let end = start;
+      while (
+        end < pos.length &&
+        pos[end][2] < ALTURA_MIN_SEGURA &&
+        time[end] - startTime <= VENTANA_ESTABILIDAD
+      ) {
+        end++;
+      }
+
+      if (time[end] - startTime >= VENTANA_ESTABILIDAD) {
+        idxAltCrit = start;
+        break;
+      }
+    }
+  }
+
+  // Detección adicional para vuelo operacional (>3s)
+  let idxAltCritOperativo = -1;
+  if (time.some((t, i) => t > 3 && pos[i][2] < ALTURA_CRITICA_VUELO)) {
+    idxAltCritOperativo = time.findIndex((t, i) => t > 3 && pos[i][2] < ALTURA_CRITICA_VUELO);
+  }
+
+  // =============================================================
+  //        RESTO DE DETECCIONES REALISTAS DE RIESGO
+  // =============================================================
+
+  // Velocidad crítica persistente
+  const idxVelCrit = velMag.findIndex(v => v > 15);
+
+  // Distancia excesiva
+  const idxDistCrit = posMag.findIndex(m => m > 80);
+
+  // Viento fuerte (sin detalles porque lo pediste)
+  const vientoCritico = log.input.Environment.WWind?.some(w => Math.abs(w) > 7) || false;
+
+  // Oscilaciones fuertes
+  const strongOscillation = accMag.some(a => a > 8);
+
+  // Reducción clara de velocidad → hover o frenada
+  const idxNearStop = velMag.findIndex(v => v < 0.5);
+
+  // =============================================================
+  //                        ANÁLISIS FINAL
+  // =============================================================
+  let analisis = "";
+  const riesgo =
+    idxVelCrit !== -1 ||
+    idxDistCrit !== -1 ||
+    vientoCritico ||
+    idxAltCrit !== -1 ||
+    idxAltCritOperativo !== -1;
+
+  if (riesgo) {
+    analisis += "⚠️ Riesgo detectado:\n";
+
+    if (idxVelCrit !== -1)
+      analisis += `- Velocidad excesiva (t=${time[idxVelCrit].toFixed(2)}s)\n`;
+
+    if (idxDistCrit !== -1)
+      analisis += `- Distancia excesiva (t=${time[idxDistCrit].toFixed(2)}s)\n`;
+
+    if (vientoCritico)
+      analisis += `- Viento fuerte detectado\n`;
+
+    if (idxAltCrit !== -1)
+      analisis += `- Altura muy baja sostenida (t=${time[idxAltCrit].toFixed(2)}s)\n`;
+
+    if (idxAltCritOperativo !== -1)
+      analisis += `- Altura peligrosa en vuelo operativo (t=${time[idxAltCritOperativo].toFixed(2)}s)\n`;
+
+  } else {
+    analisis = "🟢 La simulación muestra parámetros dentro de rangos seguros.";
+  }
+
+  // =============================================================
+  //               INFORMACIÓN EXTRA ÚTIL
+  // =============================================================
+  let extraInfo = "";
+  extraInfo += `• Tiempo total: ${time[time.length - 1].toFixed(2)} s\n`;
+  extraInfo += `• Max aceleración: ${accStats.max} m/s²\n`;
+  extraInfo += `• Promedio aceleración: ${accStats.avg} m/s²\n`;
+
+  if (idxNearStop !== -1)
+    extraInfo += `• Velocidad casi nula en t=${time[idxNearStop].toFixed(2)}s\n`;
+
+  if (strongOscillation)
+    extraInfo += `• Oscilaciones fuertes detectadas (posible PID mal ajustado)\n`;
+
+  extraInfo += `• Punto inicial: [${pos[0].map(n=>n.toFixed(2)).join(', ')}]\n`;
+  extraInfo += `• Punto final: [${pos[pos.length-1].map(n=>n.toFixed(2)).join(', ')}]\n`;
+
+  // =============================================================
+  //                     RENDER EN HTML
+  // =============================================================
+  container.innerHTML = `
+    <h3 class="text-lg font-semibold mb-2">Resumen estadístico</h3>
+
+    <p class="mb-2 text-blue-300 font-semibold">Posición (módulo):</p>
+    <ul class="ml-4 mb-4 text-gray-200">
+      <li>Distancia mínima: ${posStats.min} m</li>
+      <li>Distancia máxima: ${posStats.max} m</li>
+      <li>Distancia promedio: ${posStats.avg} m</li>
+    </ul>
+
+    <p class="mb-2 text-blue-300 font-semibold">Velocidad (módulo):</p>
+    <ul class="ml-4 mb-4 text-gray-200">
+      <li>Velocidad mínima: ${velStats.min} m/s</li>
+      <li>Velocidad máxima: ${velStats.max} m/s</li>
+      <li>Velocidad promedio: ${velStats.avg} m/s</li>
+    </ul>
+
+    <p class="mb-2 text-blue-300 font-semibold">Aceleración:</p>
+    <ul class="ml-4 mb-4 text-gray-200">
+      <li>Aceleración máxima: ${accStats.max} m/s²</li>
+      <li>Aceleración promedio: ${accStats.avg} m/s²</li>
+    </ul>
+
+    <h3 class="text-lg font-semibold mb-2">Análisis de seguridad</h3>
+    <pre class="text-sm bg-black/30 p-4 rounded whitespace-pre-wrap ${riesgo ? "text-red-400" : "text-green-300"}">
+${analisis}
+    </pre>
+
+    <h3 class="text-lg font-semibold mt-4 mb-2">Información adicional útil</h3>
+    <pre class="text-sm bg-black/20 p-4 rounded whitespace-pre-wrap text-gray-200">
+${extraInfo}
+    </pre>
+  `;
 }
+document.addEventListener("DOMContentLoaded", loadLogs);

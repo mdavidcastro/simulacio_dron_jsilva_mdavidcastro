@@ -1,27 +1,117 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <!-- GLTFLoader para modelos .glb -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Logs de Simulaciones</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- Three.js para la gráfica 3D -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
-  <!-- GLTFLoader para modelos .glb (debe ir después de Three.js) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/loaders/GLTFLoader.js"></script>
-  <!-- Chart.js para las gráficas 2D -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="js/logs.js"></script>
-  <link rel="icon" type="image/png" href="img/Hero.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logs de Simulaciones | AeroMundo</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {theme: {extend: {colors: {deep: '#0f2027', ocean: '#2c5364', sky: '#1e90ff'}}}};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Three.js usando módulos ES (soluciona el problema de MIME type) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+
+<link rel="stylesheet" href="css/logs.css">
 </head>
-<body class="bg-gray-100">
-  <div class="max-w-5xl mx-auto mt-10 p-4">
-    <h1 class="text-3xl font-bold text-center text-blue-700 mb-6">
-      📘 Registro de Simulaciones
-    </h1>
-    <!-- Nuevo contenedor para logs -->
-    <div id="logsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+<body class="bg-gradient-to-br from-deep to-ocean text-white font-sans min-h-screen flex flex-col">
+
+<header class="bg-black/60 backdrop-blur-md shadow-lg py-6 px-8 flex items-center justify-between">
+  <h1 class="text-3xl font-bold text-sky drop-shadow-lg">📊 Logs de Simulación</h1>
+  <a href="index.html" class="ml-6 flex items-center gap-3 hover:opacity-90 transition">
+      <!-- Si prefieres un logo imagen, reemplaza el <span> por <img src="img/logo.png" ...> -->
+      <span class="text-2xl font-bold text-sky drop-shadow-lg">AeroMundo</span>
+      <!-- pequeño descriptor/icono opcional -->
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l6-6 6 6 6-6" />
+      </svg>
+    </a>
+</header>
+
+<main class="flex-1 p-6">
+  <div class="max-w-7xl mx-auto">
+    <div id="loadingMsg" class="text-center text-lg mb-4 text-blue-300">⏳ Cargando logs...</div>
+    
+    <div id="logsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Las tarjetas de logs se cargarán aquí -->
+    </div>
   </div>
+</main>
+
+<!-- Modal -->
+<div id="visualModal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2 id="modalTitle" class="text-2xl font-bold text-sky mb-4">Detalles de Simulación</h2>
+    
+    <!-- Pestañas -->
+    <div class="mb-4">
+      <button id="tab3d" class="tab-btn active" onclick="showTab('3d')">🌐 3D</button>
+      <button id="tabCharts" class="tab-btn" onclick="showTab('charts')">📊 Gráficas</button>
+      <button id="tabData" class="tab-btn" onclick="showTab('data')">📋 Datos</button>
+    </div>
+    <!-- Nota de atajo -->
+<p class="text-sm text-gray-300 mb-2">
+  💡 Presiona la tecla <strong>C</strong> para centrar la cámara en el dron durante la simulación.
+</p>
+
+   <!-- Contenido 3D -->
+<div id="content3d" class="tab-content relative" style="display: block;">
+  <div id="chart3d" class="w-full h-[500px] bg-black/30 rounded relative"></div>
+  
+  <!-- Controles 3D flotando sobre la gráfica -->
+  <div id="simControls" class="absolute top-2 left-2 flex gap-3 z-10">
+    <button id="btnPlay" class="bg-sky text-white px-3 py-1 rounded">▶️ Play</button>
+    <button id="btnPause" class="bg-red-500 text-white px-3 py-1 rounded">⏸️ Pause</button>
+    <button id="btnReset" class="bg-green-500 text-white px-3 py-1 rounded">🔄 Reset</button>
+  </div>
+</div>
+
+    
+    <!-- Contenido Gráficas -->
+    <div id="contentCharts" class="tab-content">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h3 class="text-lg font-semibold mb-2">Posición (Módulo)</h3>
+          <div class="h-[300px]">
+              <canvas id="chartPosition"></canvas>
+          </div>
+
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold mb-2">Velocidad (Módulo)</h3>
+          <div class="h-[300px]">
+              <canvas id="chartVelocity"></canvas>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    
+    <!-- Contenido Datos -->
+    <div id="contentData" class="tab-content">
+      <div id="dataDetails" class="text-white"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="bg-black/60 text-center py-4 mt-auto">
+  <p class="text-gray-300 text-sm">&copy; 2025 AeroMundo — Simulación de Drones</p>
+</footer>
+
+<!-- Script principal como módulo -->
+<script type="module" src="js/logs.js"></script>
+
 </body>
 </html>
